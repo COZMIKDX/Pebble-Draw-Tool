@@ -1,0 +1,40 @@
+canvas {
+    border: 1px solid black;
+    align-self: center;
+    margin-left: 50px;
+}
+
+#main-container {
+    display: flex;
+}
+
+#palette {
+    display: flex;
+    flex-direction: column;
+}
+
+#controls {
+    display: flex;
+    flex-direction: column;
+}
+
+table {
+    background-color: gray;
+}
+
+tbody {
+    display: flex;
+    flex-direction: column;
+}
+
+td {
+    background-color: attr(color-data);
+    width: 20px;
+    height: 20px;
+}
+
+.color-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
