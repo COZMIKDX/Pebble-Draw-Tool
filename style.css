@@ -1,4 +1,4 @@
-canvas {
+#main-canvas {
     border: 1px solid black;
     align-self: center;
     margin-left: 50px;
@@ -37,4 +37,8 @@ td {
     display: flex;
     flex-direction: row;
     justify-content: center;
+}
+
+.non-display-canvas {
+    display: none;
 }

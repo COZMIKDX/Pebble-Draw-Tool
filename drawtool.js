@@ -1,7 +1,35 @@
 let main = document.getElementById("main-container");
 let tableBody = document.getElementById("table-body");
-let canvas = document.getElementById("canvas");
+
+/** @type {HTMLCanvasElement} */
+let canvas = document.getElementById("draw-canvas");
 let ctx = canvas.getContext("2d");
+
+/** @type {HTMLCanvasElement} */
+let displayCanvas = document.getElementById("main-canvas");
+let displayCtx = displayCanvas.getContext("2d");
+
+/** @type {HTMLCanvasElement} */
+let toolCanvas = document.getElementById("tool-canvas");
+let toolCtx = toolCanvas.getContext("2d");
+
+/** @type {HTMLCanvasElement} */
+let redoCanvas = document.getElementById("redo-canvas");
+let redoCtx = toolCanvas.getContext("2d");
+
+/*
+User input will be received in the position of the display canvas.
+Because of this, the offsets will be for the display canvas.
+The drawing is done on the draw canvas and will be copied over to the display canvas.
+Rectangle tool, circle tool, etc will be drawn on the tool canvas so that I can show a 
+  preview of the shape before making it permanent, drawing it on top of the draw canvas.
+
+For an undo feature I could use ctx.save() to save the draw canvas to a stack before drawing
+ and ctx.restore() to bring it back (undo).
+If the user wants to redo something, a second canvas is used to store the state before an undo is
+  done. As far as I can tell, there is no second save stack, so this was the easiest solution for it is 4:33 AM right now.
+*/
+
 
 let drawing = false;
 let prevX = 0;
@@ -33,9 +61,42 @@ let colors = [
     ["#AAFFFF", "#0055FF", "#AAAAFF"]
 ];
 
+function updateDisplayCanvas() {
+    displayCtx.clearRect(0, 0, displayCanvas.width, displayCanvas.height);
+    displayCtx.drawImage(canvas, 0, 0, displayCanvas.width, displayCanvas.height);
+    displayCtx.drawImage(toolCanvas, 0, 0, displayCanvas.width, displayCanvas.height);
+}
+
 function updateDrawOffset() {
-    xOffset = canvas.offsetLeft;
-    yOffset = canvas.offsetTop
+    xOffset = displayCanvas.offsetLeft;
+    yOffset = displayCanvas.offsetTop
+}
+
+function storeState() {
+    ctx.save();
+}
+
+function undo() { 
+    // Save the current state for redoing.
+    redoCtx.clearRect(0, 0, redoCanvas.width, redoCanvas.height);
+    redoCtx.drawImage(canvas, 0, 0, redoCanvas.width, redoCanvas.height);
+    redoCtx.save();
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+    updateDisplayCanvas();
+    console.log("undo");
+}
+
+function redo() {
+    redoCtx.clearRect(0, 0, redoCanvas.width, redoCanvas.height);
+    redoCtx.restore();
+
+    // store the state in case you need to undo again.
+    storeState();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(redoCanvas, 0, 0, canvas.width, canvas.height);
+    updateDisplayCanvas();
 }
 
 let rowIndex = 0;
@@ -178,21 +239,24 @@ function drawLine2(prevX, prevY, x, y) {
 }
 
 
-canvas.addEventListener("mousedown", (e) => {
+displayCanvas.addEventListener("mousedown", (e) => {
     drawing = true;
+    storeState();
     draw(e);
+    updateDisplayCanvas();
 });
 
-canvas.addEventListener("mousemove", (e) => {
-
+displayCanvas.addEventListener("mousemove", (e) => {
+    storeState();
     draw(e);
     prevX = getDrawX(e);
     prevY = getDrawY(e);
+    updateDisplayCanvas();
 });
 
-canvas.addEventListener("mouseup", stopDrawing);
+displayCanvas.addEventListener("mouseup", stopDrawing);
 
-canvas.addEventListener("mouseleave", stopDrawing);
+displayCanvas.addEventListener("mouseleave", stopDrawing);
 
 /*document.addEventListener("scroll", (e) => {
   updateDrawOffset();
