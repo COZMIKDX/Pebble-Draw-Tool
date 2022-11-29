@@ -42,3 +42,12 @@ td {
 .non-display-canvas {
     display: none;
 }
+
+.button {
+    text-decoration: none;
+    text-align: center;
+    background-color: lightskyblue;
+    padding: 10px;
+    margin-bottom: 5px;
+    margin-left: 5px;
+}

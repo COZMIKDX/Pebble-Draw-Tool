@@ -1,5 +1,7 @@
 let main = document.getElementById("main-container");
 let tableBody = document.getElementById("table-body");
+let undoButton = document.getElementById("undo");
+let redoButton = document.getElementById("redo");
 
 /** @type {HTMLCanvasElement} */
 let canvas = document.getElementById("draw-canvas");
@@ -13,9 +15,6 @@ let displayCtx = displayCanvas.getContext("2d");
 let toolCanvas = document.getElementById("tool-canvas");
 let toolCtx = toolCanvas.getContext("2d");
 
-/** @type {HTMLCanvasElement} */
-let redoCanvas = document.getElementById("redo-canvas");
-let redoCtx = toolCanvas.getContext("2d");
 
 /*
 User input will be received in the position of the display canvas.
@@ -28,6 +27,11 @@ For an undo feature I could use ctx.save() to save the draw canvas to a stack be
  and ctx.restore() to bring it back (undo).
 If the user wants to redo something, a second canvas is used to store the state before an undo is
   done. As far as I can tell, there is no second save stack, so this was the easiest solution for it is 4:33 AM right now.
+
+For an undo feature, I wrote some functions using ctx.save() and ctx.restore(). This is very slow.
+Instead, I will try something like saving the canvas as an Image object. That way I can draw the image if
+  I need to undo. A similar process will be done for redoing.
+I could make undo and redo stacks to hold the Image objects or maybe just the dataURLs.
 */
 
 
@@ -39,6 +43,8 @@ let yOffset = 0;
 let verticalScrollOffset = 0;
 let pixelScale = 4;
 let currentColor = "#000000";
+let undoStack = [];
+let redoStack = [];
 
 let colors = [
     ["#FFFFFF", "#AAAAAA", "#555555", "#000000"],
@@ -72,31 +78,44 @@ function updateDrawOffset() {
     yOffset = displayCanvas.offsetTop
 }
 
-function storeState() {
-    ctx.save();
+// Whenever the user draws, first save the canvas to the undo stack.
+// Store only before or after the user does a stroke.
+function storeUndo() {
+    let data = canvas.toDataURL();
+    undoStack.push(data);
 }
 
+// To undo, save the canvas to the redo stack, pop the undo stack and make an image with that data.
+// Clear the canvas and draw the image.
 function undo() { 
-    // Save the current state for redoing.
-    redoCtx.clearRect(0, 0, redoCanvas.width, redoCanvas.height);
-    redoCtx.drawImage(canvas, 0, 0, redoCanvas.width, redoCanvas.height);
-    redoCtx.save();
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.restore();
-    updateDisplayCanvas();
-    console.log("undo");
+    if (undoStack.length >= 1) {
+        let data = canvas.toDataURL();
+        redoStack.push(data);
+    
+        let img = new Image();
+        img.src = undoStack.pop();
+        img.onload = () => { 
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            updateDisplayCanvas();
+        }
+    }
 }
 
+// grab data from redo stack and make image, put current canvas in undo stack, clear canvas, draw redo image.
 function redo() {
-    redoCtx.clearRect(0, 0, redoCanvas.width, redoCanvas.height);
-    redoCtx.restore();
+    if (redoStack.length >= 1) {     
+        let data = canvas.toDataURL();
+        undoStack.push(data);
 
-    // store the state in case you need to undo again.
-    storeState();
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(redoCanvas, 0, 0, canvas.width, canvas.height);
-    updateDisplayCanvas();
+        let img = new Image();
+        img.src = redoStack.pop();
+        img.onload = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            updateDisplayCanvas();
+        }
+    }
 }
 
 let rowIndex = 0;
@@ -241,13 +260,12 @@ function drawLine2(prevX, prevY, x, y) {
 
 displayCanvas.addEventListener("mousedown", (e) => {
     drawing = true;
-    storeState();
+    storeUndo();
     draw(e);
     updateDisplayCanvas();
 });
 
 displayCanvas.addEventListener("mousemove", (e) => {
-    storeState();
     draw(e);
     prevX = getDrawX(e);
     prevY = getDrawY(e);
@@ -258,7 +276,5 @@ displayCanvas.addEventListener("mouseup", stopDrawing);
 
 displayCanvas.addEventListener("mouseleave", stopDrawing);
 
-/*document.addEventListener("scroll", (e) => {
-  updateDrawOffset();
-  console.log(e);
-});*/
+undoButton.addEventListener("click", undo);
+redoButton.addEventListener("click", redo);
