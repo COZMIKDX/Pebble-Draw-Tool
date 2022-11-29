@@ -2,6 +2,7 @@ let main = document.getElementById("main-container");
 let tableBody = document.getElementById("table-body");
 let undoButton = document.getElementById("undo");
 let redoButton = document.getElementById("redo");
+let clearButton = document.getElementById("clear");
 
 /** @type {HTMLCanvasElement} */
 let canvas = document.getElementById("draw-canvas");
@@ -85,6 +86,11 @@ function storeUndo() {
     undoStack.push(data);
 }
 
+// Whenever the user draws, we get rid of the redo stack contents.
+function clearRedoStack() {
+    redoStack = [];
+}
+
 // To undo, save the canvas to the redo stack, pop the undo stack and make an image with that data.
 // Clear the canvas and draw the image.
 function undo() { 
@@ -116,6 +122,13 @@ function redo() {
             updateDisplayCanvas();
         }
     }
+}
+
+function clear() {
+    storeUndo();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    displayCtx.clearRect(0, 0, displayCanvas.width, displayCanvas.height);
+    toolCtx.clearRect(0, 0, toolCanvas.width, toolCanvas.height);
 }
 
 let rowIndex = 0;
@@ -261,6 +274,7 @@ function drawLine2(prevX, prevY, x, y) {
 displayCanvas.addEventListener("mousedown", (e) => {
     drawing = true;
     storeUndo();
+    clearRedoStack();
     draw(e);
     updateDisplayCanvas();
 });
@@ -278,3 +292,4 @@ displayCanvas.addEventListener("mouseleave", stopDrawing);
 
 undoButton.addEventListener("click", undo);
 redoButton.addEventListener("click", redo);
+clearButton.addEventListener("click", clear);
