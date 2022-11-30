@@ -3,6 +3,8 @@ let tableBody = document.getElementById("table-body");
 let undoButton = document.getElementById("undo");
 let redoButton = document.getElementById("redo");
 let clearButton = document.getElementById("clear");
+let downloadButton = document.getElementById("download");
+let uploadButton = document.getElementById("upload");
 
 /** @type {HTMLCanvasElement} */
 let canvas = document.getElementById("draw-canvas");
@@ -293,3 +295,24 @@ displayCanvas.addEventListener("mouseleave", stopDrawing);
 undoButton.addEventListener("click", undo);
 redoButton.addEventListener("click", redo);
 clearButton.addEventListener("click", clear);
+downloadButton.addEventListener("click", () => {
+    let data = displayCanvas.toDataURL("image/png");
+    let dlimg = document.createElement("a");
+    document.body.appendChild(dlimg);
+
+    dlimg.style = "display: none";
+    dlimg.href = data;
+    dlimg.download = "pebbletest.png";
+    dlimg.click();
+});
+
+uploadButton.addEventListener("change", (e) => {
+    let imageUrl = URL.createObjectURL(e.target.files[0]);
+    let img = new Image();
+    img.src = imageUrl;
+
+    img.onload = () => {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        updateDisplayCanvas();
+    }
+});
