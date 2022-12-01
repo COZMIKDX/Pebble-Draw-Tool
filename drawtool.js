@@ -18,6 +18,10 @@ let displayCtx = displayCanvas.getContext("2d");
 let toolCanvas = document.getElementById("tool-canvas");
 let toolCtx = toolCanvas.getContext("2d");
 
+/** @type {HTMLCanvasElement} */
+let exportCanvas = document.getElementById("export-canvas");
+let exportCtx = exportCanvas.getContext("2d");
+
 
 /*
 User input will be received in the position of the display canvas.
@@ -296,7 +300,8 @@ undoButton.addEventListener("click", undo);
 redoButton.addEventListener("click", redo);
 clearButton.addEventListener("click", clear);
 downloadButton.addEventListener("click", () => {
-    let data = displayCanvas.toDataURL("image/png");
+    exportCtx.drawImage(displayCanvas, 0, 0, exportCanvas.width, exportCanvas.height);
+    let data = exportCanvas.toDataURL("image/png");
     let dlimg = document.createElement("a");
     document.body.appendChild(dlimg);
 
@@ -305,6 +310,17 @@ downloadButton.addEventListener("click", () => {
     dlimg.download = "pebbletest.png";
     dlimg.click();
 });
+
+// upload is intended for taking a drawing made in a previous session and resuming.
+// Right now, the canvases dimensions are the normal pebble dimensions multiplied by 4.
+// Because of this, I make the "pixel" draw size to 4x4 pixels so that the image would look like
+//  if you took an image at regular pebble dimensions but integer scaled it by 4.
+//  The actual image is still way bigger than the pebble's resolution.
+// To fix this, I could figure out a way to scale it back down when exporting. If I feel like
+//  making a canvas zoom function, I could use that code for it too.
+//
+// I think I could just draw the display canvas image to a pebble resolution sized canvas and it
+//  it will scale it for me.
 
 uploadButton.addEventListener("change", (e) => {
     let imageUrl = URL.createObjectURL(e.target.files[0]);
